@@ -36,10 +36,15 @@
         <button id="give-up" @click="giveUp">GIVE UP</button>
       </div>
     </section>
-    <section class="row log">
+    <section class="row log" v-if="turns.length>1">
       <div class="small-12 columns">
         <ul>
-          <li></li>
+          <li
+            v-for="(item,index) in turns"
+            :key="index"
+            :class="{'player-turn':item.isPlayer,'monster-turn':!item.isPlayer}"
+            
+          >{{item.text}}</li>
         </ul>
       </div>
     </section>
@@ -53,7 +58,8 @@ export default {
     return {
       playerHealth: 100,
       monsterHealth: 80,
-      gameIsRunning: false
+      gameIsRunning: false,
+      turns: []
     };
   },
   methods: {
@@ -61,38 +67,76 @@ export default {
       this.gameIsRunning = true;
       this.playerHealth = 100;
       this.monsterHealth = 100;
+      this.turns = [];
     },
-    attack:function(){
-        var max=10;
-        var min=3;
-        var damage = Math.max(Math.floor(Math.random()*max)+1,min);
-        this.monsterHealth -=damage;
-        if(this.monsterHealth<=0){
-            alert('你贏啦')
-            this.gameIsRunning=false;
-            return
+    attack: function() {
+      var damage = this.calculateDamage(3, 10);
+      this.monsterHealth -= damage;
+      this.turns.unshift({
+        isPlayer: true,
+        text: "player hits Monster for " + damage
+      });
+      if (this.checkWin()) {
+        return;
+      }
+      this.monsterAttacks();
+    },
+    specialAttack: function() {
+      var damage = this.calculateDamage(10, 20);
+      this.monsterHealth -= damage;
+      this.turns.unshift({
+        isPlayer: true,
+        text: "Player hits monster hard for " + damage
+      });
+      if (this.checkWin()) {
+        return;
+      }
+      this.monsterAttacks();
+    },
+    heal: function() {
+      if (this.playerHealth <= 90) {
+        this.playerHealth += 10;
+      } else {
+        this.playerHealth = 100;
+      }
+      this.turns.unshift({
+        isPlayer: true,
+        text: "Player heal for 10"
+      });
+      this.monsterAttacks();
+    },
+    giveUp: function() {
+      this.gameIsRunning = false;
+    },
+    monsterAttacks: function() {
+      var damage = this.calculateDamage(3, 6);
+      this.playerHealth -= damage;
+      this.checkWin();
+      this.turns.unshift({
+        isPlayer: false,
+        text: "Monster hits player for " + damage
+      });
+    },
+    calculateDamage: function(min, max) {
+      return Math.max(Math.floor(Math.random() * max) + 1, min);
+    },
+    checkWin: function() {
+      if (this.monsterHealth <= 0) {
+        if (confirm("You won! New Game?")) {
+          this.startGame();
+        } else {
+          this.gameIsRunning = false;
         }
-       
-        
-        max=7;
-        min=1;
-        damage = Math.max(Math.floor(Math.random()*max)+1,min);
-        this.playerHealth -=damage;
-
-        if(this.playerHealth<=0){
-            alert('你輸啦');
-            this.gameIsRunning=false
+        return true;
+      } else if (this.playerHealth <= 0) {
+        if (confirm("You lost! New Game?")) {
+          this.startGame();
+        } else {
+          this.gameIsRunning = false;
         }
-        
-    },
-    specialAttack:function(){
-      return 0
-    },
-    heal:function(){
- return 0
-    },
-    giveUp:function(){
- return 0
+        return true;
+      }
+      return false;
     }
   }
 };
